@@ -33,11 +33,12 @@ create_event_tool = FunctionTool.from_defaults(fn=my_calendar.create_event,
                                                            "is not specified."
                                                )
 # custom tool to fetch events from calendar
-fetch_events_tool = FunctionTool.from_defaults(fn=my_calendar.get_events,
-                                               name="fetch_new_events",
+fetch_events_tool = FunctionTool.from_defaults(fn=my_calendar.get_events_for_day,
+                                               name="fetch_event_date",
                                                description="Retrieves a set number of upcoming events from Google "
-                                                           "Calendar."
-                                                           "This function is designed to provide the next n events ")
+                                                           "Calendar for a single date."
+                                                           "This function is designed to provide events for an "
+                                                           "specific date ")
 
 # custom tool to fetch events from calendar
 fetch_events_tool_n_days = FunctionTool.from_defaults(fn=my_calendar.get_events_n_days,

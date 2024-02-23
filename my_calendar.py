@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import pickle
 
+import pytz
 from dateutil import parser
 import os.path
 from google.auth.transport.requests import Request
@@ -92,6 +93,11 @@ class MyCalendar:
 
         return events
 
+    def get_calendar_timezone(self, service, calendarId='primary'):
+        """Fetch the timezone of the specified Google Calendar."""
+        calendar = service.calendars().get(calendarId=calendarId).execute()
+        return calendar['timeZone']
+
     def convert_events_to_string(self, events):
         if not events:
             return "No upcoming events found."
@@ -110,9 +116,16 @@ class MyCalendar:
     def get_events_from_to(self, start_date, end_date):
         service = self.google_calendar_auth()
 
-        # 'Z' indicates UTC time
-        start_date = start_date + 'T00:00:00Z'
-        end_date = end_date + 'T00:00:00Z'
+        calendar_timezone = self.get_calendar_timezone(service, calendarId='primary')
+        tz = pytz.timezone(calendar_timezone)
+
+        # Convert start_date_str and end_date_str to datetime objects in the calendar's timezone
+        start_date = tz.localize(datetime.strptime(start_date, '%Y-%m-%d'))
+        end_date = tz.localize(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1))
+
+        # Convert to RFC3339 format
+        start_date = start_date.isoformat()
+        end_date = end_date.isoformat()
 
         events_result = service.events().list(calendarId='primary', timeMin=start_date,
                                               timeMax=end_date, singleEvents=True,
@@ -130,10 +143,17 @@ class MyCalendar:
     def get_events_for_day(self, date):
         service = self.google_calendar_auth()
 
-        # 'Z' indicates UTC time
-        start_time = datetime.strptime(date, '%Y-%m-%d').isoformat() + 'Z'
-        end_time = (datetime.strptime(date, '%Y-%m-%d') +
-                    timedelta(days=1)).isoformat() + 'Z'
+        if type(date) is str:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+
+        calendar_timezone = self.get_calendar_timezone(service, calendarId='primary')
+        tz = pytz.timezone(calendar_timezone)
+
+        start_time = tz.localize(datetime.combine(date, datetime.min.time())).isoformat()
+        end_time = tz.localize(datetime.combine(date, datetime.max.time())).isoformat()
+        print("get_events_for_day is called for following dates: ")
+        print(start_time)
+        print(end_time)
 
         events_result = service.events().list(calendarId='primary', timeMin=start_time,
                                               timeMax=end_time, singleEvents=True,
@@ -141,23 +161,36 @@ class MyCalendar:
         events = events_result.get('items', [])
 
         if not events:
-            print('No events found for this day.')
-        for event in events:
-            start = event['start'].get('dateTime', event['start'].get('date'))
-            print(start, event['summary'])
+            print('No upcoming events found.')
+        else:
+            for event in events:
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                print(start, event['summary'])
+        return events
 
     def get_events_n_days(self, n_days, start_date=None ):
         """Shows usage of the Google Calendar API. Prints the start and name of the next events."""
         service = self.google_calendar_auth()
+
+        calendar_timezone = self.get_calendar_timezone(service, calendarId='primary')
+        tz = pytz.timezone(calendar_timezone)
+
         if start_date is None:
-            start_date = datetime.today().date()
-        # 'Z' indicates UTC time
+            # Use today's date in the calendar's timezone
+            start_date = datetime.now(tz).date()
+        else:
+            # Convert start_date_str to a date object
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
 
-        start_time = datetime.combine(start_date, datetime.min.time()).isoformat() + 'Z'
-        print(start_time)
+            # Localize the start datetime to the calendar's timezone
+        start_datetime = tz.localize(datetime.combine(start_date, datetime.min.time()))
 
-        end_time = (datetime.combine(start_date, datetime.min.time()) + timedelta(days=n_days)).isoformat() + 'Z'
-        print(end_time)
+        # Calculate end datetime in the calendar's timezone
+        end_datetime = tz.localize(datetime.combine(start_date, datetime.max.time()) + timedelta(days=n_days))
+
+        start_time = start_datetime.isoformat()
+        end_time = end_datetime.isoformat()
+
         print("here in calendar call")
         events_result = service.events().list(calendarId='primary', timeMin=start_time,
                                               timeMax=end_time, singleEvents=True,
@@ -185,6 +218,6 @@ if __name__ == '__main__':
 
     # c.create_event('2024-02-04T10:00:00', 'Meeting with Bob', 2, 'Discussing project progress',
     #                'Office')
-    # recent_events = c.get_events_n_days(3)
+    recent_events = c.get_events_n_days(2)
     # c.convert_events_to_string(recent_events)
-    c.get_events_from_to('2024-02-', '2024-01-18')
+    c.get_events_for_day('2024-02-23')

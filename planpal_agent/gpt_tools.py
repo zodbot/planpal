@@ -83,22 +83,27 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "get_events",
-            "description": "Retrieves a set number of upcoming events from Google "
-                           "Calendar.",
+            "name": "fetch_event_date",
+            "description": "Retrieves a set number of upcoming events from Google Calendar for a specific date.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "n": {
-                        "type": "integer",
-                        "description": "Number of events to fetch."
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "The date for which events should be retrieved, formatted as YYYY-MM-DD."
                     }
                 },
-                "required": ["n"]
+                "required": ["date"]
+            },
+            "returns": {
+                "type": "array",
+                "description": "A list of events for the specified date. "
+                               "Each event is represented as an object containing details such as the start time and summary."
             }
-            # "description": "A list of events, each represented as an object."
         }
-    },
+    }
+    ,
 
     {
         "type": "function",
@@ -131,16 +136,16 @@ class Event:
     location = "Office"
 
 
-def get_calendar_events(n):
+def get_calendar_events(date):
     c = MyCalendar()
-    print("called get_calendar_events function! ")
-    events = c.get_events(n=n)
+    print("called get_calendar_events function! for date: ", date)
+    events = c.get_events_for_day(date=date)
     return json.dumps({"events": events})
 
 
 def get_calendar_events_n_days(n_days):
     c = MyCalendar()
-    print("called get_calendar_events function! ")
+    print("called get_calendar_events_n_days function! for n days: ", n_days)
     events = c.get_events_n_days(n_days)
     return json.dumps({"events": events})
 
@@ -163,7 +168,7 @@ def create_multiple_calendar_events(events: List[Event]):
 
 
 available_functions = {
-    "get_events": get_calendar_events,
+    "fetch_event_date": get_calendar_events,
     "get_events_n_days": get_calendar_events_n_days,
     "create_event": create_calendar_event,
     "create_events": create_multiple_calendar_events

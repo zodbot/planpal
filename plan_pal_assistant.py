@@ -1,3 +1,5 @@
+import os
+
 import openai
 import requests
 from openai import OpenAI
@@ -9,9 +11,20 @@ import pytz
 
 from planpal_agent import gpt_tools
 from my_calendar import MyCalendar
+from dotenv import load_dotenv
+
+import os
 
 client = OpenAI()
 GPT_MODEL = "gpt-3.5-turbo-0613"
+
+print(f"Current working directory: {os.getcwd()}")
+
+# Load environment variables from .env file
+load_dotenv(".env")
+
+# Ensure your OpenAI API key is loaded from the environment variables
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 def get_calendar_events(n):
@@ -80,8 +93,7 @@ def chat_completion_request(messages, tools=None, tool_choice=None, model=GPT_MO
         return e
 
 
-def run_conversation():
-
+def run_conversation(user_input):
     local_timezone = datetime.now(pytz.timezone('America/New_York'))  # Replace with your time zone
     current_datetime = local_timezone.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -97,30 +109,25 @@ def run_conversation():
                  "content": f"Current Date and Time: {current_datetime}, Local Time Zone: {local_timezone}"
                  },
                 {"role": "user",
-                 "content": "what time is my flight to new york? "}]
+                 "content": user_input}]
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-1106",
         messages=messages,
         tools=gpt_tools.tools,
+        temperature=0,
         tool_choice="auto",  # auto is default, but we'll be explicit
     )
     response_message = response.choices[0].message
 
+    # return response_message.content.__str__()
+
     pretty_print_conversation(messages)
 
     tool_calls = response_message.tool_calls
-    print(tool_calls)
+    print("tool_calls", tool_calls)
     # Step 2: check if the model wanted to call a function
     if tool_calls:
-        # Step 3: call the function
-        # Note: the JSON response may not always be valid; be sure to handle errors
-        # available_functions = {
-        #     "get_events": get_calendar_events,
-        #     "get_events_n_days": get_calendar_events_n_days,
-        #     "create_event": create_calendar_event,
-        #
-        # }
         messages.append(response_message)  # extend conversation with assistant's reply
         # Step 4: send the info for each function call and function response to the model
         for tool_call in tool_calls:
@@ -129,10 +136,10 @@ def run_conversation():
             print(function_to_call)
             function_args = json.loads(tool_call.function.arguments)
             function_response = ""
-            if function_name == 'get_events':
-                # Extract 'n' parameter for get_events function
-                n = function_args.get("n")
-                function_response = function_to_call(n=n)
+            if function_name == 'fetch_event_date':
+                # Extract 'date' parameter for get_events function
+                date = function_args.get("date")
+                function_response = function_to_call(date=date)
                 print(function_response)
 
             elif function_name == 'get_events_n_days':
@@ -164,15 +171,19 @@ def run_conversation():
                         "tool_call_id": tool_call.id,
                         "role": "tool",
                         "name": function_name,
+
                         "content": function_response,
                     }
                 )  # extend conversation with function response
         second_response = client.chat.completions.create(
             model="gpt-3.5-turbo-1106",
+            temperature=0,
             messages=messages,
         )  # get a new response from the model where it can see the function response
         print(second_response)
-    #     return second_response
+        response_message = second_response.choices[0].message
+
+        return response_message.content.__str__()
 
 
-run_conversation()
+run_conversation("what is on my calander tomorrow? ")
