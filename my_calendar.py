@@ -140,17 +140,17 @@ class MyCalendar:
             print(start, event['summary'])
         return events
 
-    def get_events_for_day(self, date):
+    def get_events_for_day(self, start_date):
         service = self.google_calendar_auth()
 
-        if type(date) is str:
-            date = datetime.strptime(date, '%Y-%m-%d').date()
+        if type(start_date) is str:
+            start_date = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S').date()
 
         calendar_timezone = self.get_calendar_timezone(service, calendarId='primary')
         tz = pytz.timezone(calendar_timezone)
 
-        start_time = tz.localize(datetime.combine(date, datetime.min.time())).isoformat()
-        end_time = tz.localize(datetime.combine(date, datetime.max.time())).isoformat()
+        start_time = tz.localize(datetime.combine(start_date, datetime.min.time())).isoformat()
+        end_time = tz.localize(datetime.combine(start_date, datetime.max.time())).isoformat()
         print("get_events_for_day is called for following dates: ")
         print(start_time)
         print(end_time)

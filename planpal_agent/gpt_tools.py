@@ -83,27 +83,23 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "fetch_event_date",
-            "description": "Retrieves a set number of upcoming events from Google Calendar for a specific date.",
+            "name": "get_events",
+            "description": "Retrieves a set number of upcoming events from Google "
+                           "Calendar for specific date.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "date": {
+                    "start_date": {
                         "type": "string",
-                        "format": "date",
-                        "description": "The date for which events should be retrieved, formatted as YYYY-MM-DD."
+                        "format": "date-time",
+                        "description": "date to fetch events."
                     }
                 },
-                "required": ["date"]
-            },
-            "returns": {
-                "type": "array",
-                "description": "A list of events for the specified date. "
-                               "Each event is represented as an object containing details such as the start time and summary."
+                "required": ["start_date"]
             }
+            # "description": "A list of events, each represented as an object."
         }
-    }
-    ,
+    },
 
     {
         "type": "function",
@@ -136,16 +132,16 @@ class Event:
     location = "Office"
 
 
-def get_calendar_events(date):
+def get_calendar_events(start_date):
     c = MyCalendar()
-    print("called get_calendar_events function! for date: ", date)
-    events = c.get_events_for_day(date=date)
+    print("called get_calendar_events function! ")
+    events = c.get_events_for_day(start_date=start_date)
     return json.dumps({"events": events})
 
 
 def get_calendar_events_n_days(n_days):
     c = MyCalendar()
-    print("called get_calendar_events_n_days function! for n days: ", n_days)
+    print("called get_calendar_events function! ")
     events = c.get_events_n_days(n_days)
     return json.dumps({"events": events})
 
@@ -168,7 +164,7 @@ def create_multiple_calendar_events(events: List[Event]):
 
 
 available_functions = {
-    "fetch_event_date": get_calendar_events,
+    "get_events": get_calendar_events,
     "get_events_n_days": get_calendar_events_n_days,
     "create_event": create_calendar_event,
     "create_events": create_multiple_calendar_events
@@ -181,8 +177,8 @@ def function_call(function_name, function_args):
     print("about to call function: ", function_to_call)
     if function_name == 'get_events':
         # Extract 'n' parameter for get_events function
-        n = function_args.get("n")
-        function_response = function_to_call(n=n)
+        start_date = function_args.get("start_date")
+        function_response = function_to_call(start_date=start_date)
         print(function_response)
 
     elif function_name == 'get_events_n_days':
