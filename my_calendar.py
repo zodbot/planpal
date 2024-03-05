@@ -29,12 +29,22 @@ class MyCalendar:
         if os.path.exists('token.pickle'):
             with open('token.pickle', 'rb') as token:
                 creds = pickle.load(token)
+
+        # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+                try:
+                    creds.refresh(Request())
+                except Exception as e:
+                    print(f"Error refreshing token: {e}, re-authenticating...")
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        'credentials.json', SCOPES)
+                    creds = flow.run_local_server(port=0)
             else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
                 creds = flow.run_local_server(port=0)
+            # Save the credentials for the next run
             with open('token.pickle', 'wb') as token:
                 pickle.dump(creds, token)
 
@@ -144,7 +154,10 @@ class MyCalendar:
         service = self.google_calendar_auth()
 
         if type(start_date) is str:
-            start_date = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S').date()
+            start_datetime = parser.parse(start_date)
+
+            # If you need just the date part and want to ignore the time and timezone
+            start_date = start_datetime.date()
 
         calendar_timezone = self.get_calendar_timezone(service, calendarId='primary')
         tz = pytz.timezone(calendar_timezone)
@@ -180,7 +193,10 @@ class MyCalendar:
             start_date = datetime.now(tz).date()
         else:
             # Convert start_date_str to a date object
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            start_datetime = parser.parse(start_date)
+
+            # If you need just the date part and want to ignore the time and timezone
+            start_date = start_datetime.date()
 
             # Localize the start datetime to the calendar's timezone
         start_datetime = tz.localize(datetime.combine(start_date, datetime.min.time()))

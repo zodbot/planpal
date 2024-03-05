@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 import openai
 
 # Display the current working directory in the Streamlit app
-st.write(f"Current working directory: {os.getcwd()}")
-
-print(f"Current working directory: {os.getcwd()}")
+st.write(f"I am your PlanPal! ")
 
 # Load environment variables from .env file
 load_dotenv(".env")
@@ -20,13 +18,16 @@ load_dotenv(".env")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 from plan_pal_assistant import run_conversation
+from planpal_agent import llm
+from planpal_agent.plan_pal import PlanPalAssistant
 
 
 # Function to mimic processing and responding to a message
-def process_message(message):
-    # Here you can add your logic to process the message
-    # For demonstration, we'll just echo the message
-    return run_conversation(message)
+def process_message(message, context=""):
+    llm_client = llm.client  # Assuming llm.client is already defined and configured
+    planpal_assistant = PlanPalAssistant(llm_client)
+    new_response = planpal_assistant.process_user_request(context + message)
+    return new_response
     # return "Hello"
 
 
@@ -35,7 +36,7 @@ if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []
 
 # Chat UI
-st.title('Simple Chat App')
+st.title('PlanPal')
 
 # Join all messages in chat_history and display in a single text_area
 chat_display = "\n".join(st.session_state['chat_history'])
