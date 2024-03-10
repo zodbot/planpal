@@ -17,17 +17,16 @@ load_dotenv(".env")
 # Ensure your OpenAI API key is loaded from the environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-from plan_pal_assistant import run_conversation
 from planpal_agent import llm
 from planpal_agent.plan_pal import PlanPalAssistant
 
-
+context=""
 # Function to mimic processing and responding to a message
 def process_message(message, context=""):
     llm_client = llm.client  # Assuming llm.client is already defined and configured
     planpal_assistant = PlanPalAssistant(llm_client)
-    new_response = planpal_assistant.process_user_request(context + message)
-    return new_response
+    context = planpal_assistant.process_user_request(message, context)
+    return context
     # return "Hello"
 
 

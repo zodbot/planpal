@@ -36,20 +36,19 @@ def create_thread_and_run(user_input, assistant_id):
     return thread, run
 
 
-def pretty_print(messages) -> str:
-    output = ""
+def pretty_print(messages):
     print("# Messages")
     for m in messages:
-        output += m.content[0].text.value
-        print(f"{m.role}: {m.content[0].text.value}")
+        print(m["role"], ": ", m["content"])
     print()
-    return output
 
 
 def extract_assistant_message(messages):
+    res = []
     for m in messages:
-        if m.role == "assistant":
-            return f"{m.role}: {m.content[0].text.value}"
+        res.append({"role": "user",
+                    "content": m.content[0].text.value})
+    return res
 
 
 def show_json(obj, write_to_file=False):
