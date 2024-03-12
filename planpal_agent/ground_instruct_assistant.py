@@ -7,7 +7,7 @@ from planpal_agent.assistant import Assistant
 instruct_understand_user = ("task_step: 1" "task_name: Understand User Requirements about date and time! "
                             "task_objective: Comprehend user-provided task fully and ground time to exact dates and time"
                             "task_description: Analyze and understand the user's task. generate a right prompt with "
-                            "dates in ISO 8601 format, e.g., '2024-01-10T09:00:00")
+                            "dates in ISO 8601 format, e.g., '2024-01-10")
 
 local_timezone = datetime.now(pytz.timezone('America/New_York'))  # Replace with your time zone
 current_datetime = local_timezone.strftime('%Y-%m-%d %H:%M:%S')
@@ -27,10 +27,10 @@ class InstructAssistant(Assistant):
         self.tools = [{"type": "code_interpreter"}]
 
     def construct_prompt(self, user_message):
-        prompt = (f"I have a got a request from user, they are asking: {user_message} I don't know the actual dates "
+        prompt = (f"I have a got a request from user, they are asking: {user_message} I don't know the actual dates or time"
                   f"they are referring to. can you figure out what the ISO dates are? if they are referring to "
                   f"multiple days, figure out the start date and duration Return the date as a string, do not print "
-                  f"anything. Please finish this python code: from datetime import datetime, timedelta # Get today's "
+                  f"anything. If time is not specified ask for it! Please finish this python code: from datetime import datetime, timedelta # Get today's "
                   f"date today = datetime.now()")
         return {
                 "role": "user",

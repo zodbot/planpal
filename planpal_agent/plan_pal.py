@@ -24,11 +24,13 @@ class PlanPalAssistant:
             print("history: ", history)
             # Limit the history to the last max_history_messages messages
             # thread already handles this, but I still limit the messages for testing.
-            limited_history = history[-max_history_messages:]
-            messages = limited_history + messages
+            # limited_history = history[-max_history_messages:]
+            messages = history + messages
 
         messages.append(self.time_assistant.construct_prompt(user_message=prompt))
-        self.logger.debug("the first prompt to time assistant: ", messages)
+        print("the first prompt to time assistant: ")
+        llm.pretty_print(messages)
+        print("###############################################################")
 
         thread1 = self.llm_client.beta.threads.create(
             messages=messages
@@ -42,22 +44,23 @@ class PlanPalAssistant:
         llm.wait_on_run(run1, thread1)
 
         response1 = llm.get_response(thread1)
-        # messages = llm.extract_assistant_message(response1)
-        #
+        messages = llm.extract_assistant_message(response1)
+        print("the first response: ")
+        llm.pretty_print(messages)
+        print("###############################################################")
 
-        # Now call the calendar function with the right prompt
-        # thread2, run2 = llm.create_thread_and_run(
-        #     prompt + llm.extract_assistant_message(response1),
-        #     self.CALENDAR_ASSISTANT_ID
-        # )
         new_prompt = [{
             "role": "user",
             "content": prompt
         }]
+
         new_messages = llm.extract_assistant_message(response1) + new_prompt
+        print("the second prompt: ")
+        llm.pretty_print(new_messages)
+        print("###############################################################")
 
         thread2 = self.llm_client.beta.threads.create(
-            messages=new_messages
+            messages=history + new_messages
         )
         # Emulating concurrent user requests for time interpretation
         run2 = self.llm_client.beta.threads.runs.create(
@@ -68,6 +71,9 @@ class PlanPalAssistant:
         run2 = llm.wait_on_run(run2, thread2)
         response2 = llm.get_response(thread2)
         messages = llm.extract_assistant_message(response2)
+        print("the second response: ")
+        llm.pretty_print(messages)
+        print("###############################################################")
 
         # response_str = llm.pretty_print(response2)
         if run2.required_action:
@@ -91,8 +97,15 @@ class PlanPalAssistant:
                 llm.wait_on_run(run, thread2)
 
                 messages = llm.extract_assistant_message(llm.get_response(thread2))
+                print("final answer after function call : ")
+                llm.pretty_print(messages)
+                print("######################################################################")
                 return messages
         else:
+            print("no function call : ")
+            llm.pretty_print(messages)
+            print("######################################################################")
+
             return messages
 
 

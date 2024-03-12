@@ -16,4 +16,6 @@ class Assistant:
             name=self.name,
             instructions=self.instructions,
             tools=self.tools,
-            model=self.model)
+            model=self.model,
+
+        )
