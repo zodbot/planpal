@@ -232,20 +232,33 @@ class MyCalendar:
         calendar_timezone = self.get_calendar_timezone(service, calendarId='primary')
         tz = pytz.timezone(calendar_timezone)
 
-        # Parsing start and end dates directly to timezone-aware datetimes
-        start_date_iso = tz.localize(datetime.strptime(start_date_str, '%Y-%m-%d'))
-        end_date = tz.localize(datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1))
+        # Parsing start_date and end_date with consideration for provided time
+        try:
+            start_date = tz.localize(datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M:%S'))
+        except ValueError:
+            start_date = tz.localize(datetime.strptime(start_date_str, '%Y-%m-%d'))
 
-        start_date = start_date_iso.isoformat()
-        end_date = end_date.isoformat()
+        try:
+            end_date = tz.localize(datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M:%S'))
+        except ValueError:
+            end_date = tz.localize(
+                datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1))
 
-        events_result = service.events().list(calendarId='primary', timeMin=start_date,
-                                              timeMax=end_date, singleEvents=True,
+        # Conversion to ISO format for API call
+        start_date_iso = start_date.isoformat()
+        end_date_iso = end_date.isoformat()
+
+        events_result = service.events().list(calendarId='primary', timeMin=start_date_iso,
+                                              timeMax=end_date_iso, singleEvents=True,
                                               orderBy='startTime').execute()
         events = events_result.get('items', [])
 
-        current_time = start_date_iso
+        current_time = start_date
         empty_slots = []
+        # for event in events:
+        #     start = event['start'].get('dateTime', event['start'].get('date'))
+        #     end= event['end'].get('dateTime', event['start'].get('date'))
+        #     print(start, ", " , end, " : ", event['summary'])
 
         for event in events:
             event_start_str = event['start'].get('dateTime', event['start'].get('date'))
@@ -264,11 +277,10 @@ class MyCalendar:
 
             current_time = max(current_time, event_end)
 
-        if current_time < datetime.fromisoformat(end_date):
-            empty_slots.append((current_time.isoformat(), end_date))
+        if current_time < tz.localize(datetime.fromisoformat(end_date_str)):
+            empty_slots.append((current_time.isoformat(), end_date_iso))
 
         return empty_slots
-
 
 if __name__ == '__main__':
     print("Welcome to PlanPal! ")
@@ -276,9 +288,9 @@ if __name__ == '__main__':
 
     # c.create_event('2024-02-04T10:00:00', 'Meeting with Bob', 2, 'Discussing project progress',
     #                'Office')
-    recent_events = c.get_events_from_to("2024-03-19", "2024-03-20")
+    # recent_events = c.get_events_from_to("2024-03-19", "2024-03-20")
     # print(recent_events)
     # c.convert_events_to_string(recent_events)
-    start_date_iso = "2024-03-18"
-    end_date_iso = "2024-03-20"
+    start_date_iso = "2024-03-19"
+    end_date_iso = "2024-03-19"
     print(c.find_empty_slots(start_date_iso, end_date_iso))

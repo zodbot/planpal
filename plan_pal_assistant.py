@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 import os
 
-GPT_MODEL = "gpt-3.5-turbo-0613"
+GPT_MODEL = "gpt-4"
 
 
 class PlanPal:
@@ -117,7 +117,7 @@ class PlanPal:
         messages.append({"role": "user", "content": user_input})
 
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo-1106",
+            model=GPT_MODEL,
             messages=messages,
             tools=gpt_tools.tools,
             temperature=0.0,
@@ -186,7 +186,7 @@ class PlanPal:
                     }
                 )  # extend conversation with function response
             second_response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo-1106",
+                model=GPT_MODEL,
                 temperature=0,
                 messages=messages,
             )  # get a new response from the model where it can see the function response
@@ -199,3 +199,6 @@ class PlanPal:
             self.pretty_print_conversation(messages)
 
             return messages
+
+p = PlanPal()
+p.run_conversation("what is on my calander tomorrow?")

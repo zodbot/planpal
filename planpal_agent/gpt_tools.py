@@ -119,7 +119,32 @@ tools = [
             }
             # "description": "A list of events, each represented as an object."
         }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "find_empty_slots",
+            "description": "Finds empty time slots between events in Google Calendar within a specified date range.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start_date_str": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "The start date of the period to search for empty slots, in 'YYYY-MM-DD' format."
+                    },
+                    "end_date_str": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "The end date of the period to search for empty slots, in 'YYYY-MM-DD' format."
+                    }
+                },
+                "required": ["start_date_str", "end_date_str"]
+            }
+        }
     }
+
 
 ]
 
@@ -153,6 +178,12 @@ def create_calendar_event(start_time, summary, duration=1, description=None, loc
     return json.dumps({"details": details})
 
 
+def find_empty_slots(start_time, end_time):
+    c = MyCalendar()
+    empty_slots = c.find_empty_slots(start_time, end_time)
+    return json.dumps({"empty_slots": empty_slots})
+
+
 def create_multiple_calendar_events(events: List[Event]):
     c = MyCalendar()
     details = []
@@ -167,7 +198,8 @@ available_functions = {
     "get_events": get_calendar_events,
     "get_events_n_days": get_calendar_events_n_days,
     "create_event": create_calendar_event,
-    "create_events": create_multiple_calendar_events
+    "create_events": create_multiple_calendar_events,
+    "find_empty_slots": find_empty_slots
 }
 
 
@@ -202,6 +234,16 @@ def function_call(function_name, function_args):
             description=description,
             location=location
         )
+    elif function_name == 'find_empty_slots':
+        # Extract parameters for find_empty_slots method
+        start_date_str = function_args.get("start_date_str")
+        end_date_str = function_args.get("end_date_str")
+
+        function_response = function_to_call(
+            start_time=start_date_str,
+            end_time=end_date_str
+        )
+
         # print(function_response)
 
     elif function_name == 'create_events':

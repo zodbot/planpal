@@ -18,14 +18,14 @@ class PlanPalAssistant:
         self.TIME_ASSISTANT_ID = self.time_assistant.create_assistant().id
         self.CALENDAR_ASSISTANT_ID = self.calendar_assistant.create_assistant().id
 
-    def process_user_request(self, prompt, history=None, max_history_messages=5):
+    def process_user_request(self, prompt, history=None, max_history_messages=2):
         messages = []
         if history:
             print("history: ", history)
             # Limit the history to the last max_history_messages messages
             # thread already handles this, but I still limit the messages for testing.
-            # limited_history = history[-max_history_messages:]
-            messages = history + messages
+            limited_history = history[-max_history_messages:]
+            messages = limited_history + messages
 
         messages.append(self.time_assistant.construct_prompt(user_message=prompt))
         print("the first prompt to time assistant: ")
@@ -116,5 +116,5 @@ if __name__ == "__main__":
     p = "user: add to my calander that I go shopping on tuesday?"
     h = planpal_assistant.process_user_request(p)
 
-    p1 = "at 6pm"
-    h2 = planpal_assistant.process_user_request(p1, h)
+    # p1 = "at 6pm"
+    # h2 = planpal_assistant.process_user_request(p1, h)
