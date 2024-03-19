@@ -181,7 +181,7 @@ class MyCalendar:
                 print(start, event['summary'])
         return events
 
-    def get_events_n_days(self, n_days, start_date=None ):
+    def get_events_n_days(self, n_days, start_date=None):
         """Shows usage of the Google Calendar API. Prints the start and name of the next events."""
         service = self.google_calendar_auth()
 
@@ -221,11 +221,53 @@ class MyCalendar:
             print(start, event['summary'])
 
         # Process and return events
-            # save them to the file
+        # save them to the file
         self.convert_events_to_string(events)
 
         return events
 
+    def find_empty_slots(self, start_date_str, end_date_str):
+        service = self.google_calendar_auth()
+
+        calendar_timezone = self.get_calendar_timezone(service, calendarId='primary')
+        tz = pytz.timezone(calendar_timezone)
+
+        # Parsing start and end dates directly to timezone-aware datetimes
+        start_date_iso = tz.localize(datetime.strptime(start_date_str, '%Y-%m-%d'))
+        end_date = tz.localize(datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1))
+
+        start_date = start_date_iso.isoformat()
+        end_date = end_date.isoformat()
+
+        events_result = service.events().list(calendarId='primary', timeMin=start_date,
+                                              timeMax=end_date, singleEvents=True,
+                                              orderBy='startTime').execute()
+        events = events_result.get('items', [])
+
+        current_time = start_date_iso
+        empty_slots = []
+
+        for event in events:
+            event_start_str = event['start'].get('dateTime', event['start'].get('date'))
+            event_end_str = event['end'].get('dateTime', event['end'].get('date'))
+
+            event_start = datetime.fromisoformat(event_start_str)
+            if event_start.tzinfo is None:
+                event_start = tz.localize(event_start)
+
+            event_end = datetime.fromisoformat(event_end_str)
+            if event_end.tzinfo is None:
+                event_end = tz.localize(event_end)
+
+            if event_start > current_time:
+                empty_slots.append((current_time.isoformat(), event_start.isoformat()))
+
+            current_time = max(current_time, event_end)
+
+        if current_time < datetime.fromisoformat(end_date):
+            empty_slots.append((current_time.isoformat(), end_date))
+
+        return empty_slots
 
 
 if __name__ == '__main__':
@@ -234,6 +276,9 @@ if __name__ == '__main__':
 
     # c.create_event('2024-02-04T10:00:00', 'Meeting with Bob', 2, 'Discussing project progress',
     #                'Office')
-    recent_events = c.get_events_n_days(2)
+    recent_events = c.get_events_from_to("2024-03-19", "2024-03-20")
+    # print(recent_events)
     # c.convert_events_to_string(recent_events)
-    c.get_events_for_day('2024-02-23')
+    start_date_iso = "2024-03-18"
+    end_date_iso = "2024-03-20"
+    print(c.find_empty_slots(start_date_iso, end_date_iso))
