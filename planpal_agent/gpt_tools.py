@@ -143,8 +143,46 @@ tools = [
                 "required": ["start_date_str", "end_date_str"]
             }
         }
-    }
+    },
 
+    {
+        "type": "function",
+        "function": {
+            "name": "modify_event",
+            "description": "Modifies an existing calendar event based on the event's description. The function allows updating the event's summary, location, and start/end times.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "desc": {
+                        "type": "string",
+                        "description": "The description used to identify the event to modify."
+                    },
+                    "new_summary": {
+                        "type": "string",
+                        "description": "The new summary (title) of the event."
+                    },
+                    "new_location": {
+                        "type": "string",
+                        "description": "The new location of the event, optional.",
+                        "nullable": True
+                    },
+                    "new_start_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The new start time of the event in ISO 8601 format, optional.",
+                        "nullable": True
+                    },
+                    "new_end_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The new end time of the event in ISO 8601 format, optional.",
+                        "nullable": True
+                    }
+                },
+                "required": ["desc", "new_summary"]
+            }
+        }
+    }
 
 ]
 
@@ -184,6 +222,12 @@ def find_empty_slots(start_time, end_time):
     return json.dumps({"empty_slots": empty_slots})
 
 
+def modify_event(description, new_summary=None, new_location=None, new_start_time=None, new_end_time=None):
+    c = MyCalendar()
+    empty_slots = c.modify_event_description(description, new_summary, new_location, new_start_time, new_end_time)
+    return json.dumps({"empty_slots": empty_slots})
+
+
 def create_multiple_calendar_events(events: List[Event]):
     c = MyCalendar()
     details = []
@@ -199,7 +243,8 @@ available_functions = {
     "get_events_n_days": get_calendar_events_n_days,
     "create_event": create_calendar_event,
     "create_events": create_multiple_calendar_events,
-    "find_empty_slots": find_empty_slots
+    "find_empty_slots": find_empty_slots,
+    "modify_event": modify_event
 }
 
 
@@ -260,5 +305,17 @@ def function_call(function_name, function_args):
             e.location = event.get("location", "")
             events_to_call.append(e)
         function_response = function_to_call(events_to_call)
-        # print(function_response)
+
+    elif function_name == 'modify_event':
+        # Assuming the function_args dictionary contains necessary arguments
+        desc = function_args.get("description")
+        new_summary = function_args.get("new_summary", "")
+        new_location = function_args.get("new_location", "")
+        new_start_time = function_args.get("new_start_time", "")
+        new_end_time = function_args.get("new_end_time", "")
+
+        # Call the modify_event_description function with the provided arguments
+        function_response = modify_event(desc, new_summary, new_location, new_start_time, new_end_time)
+
+    # print(function_response)
     return function_response

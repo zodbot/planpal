@@ -282,15 +282,78 @@ class MyCalendar:
 
         return empty_slots
 
+    def find_event_by_description(self, search_description):
+        service = self.google_calendar_auth()
+        # Assume calendarId is 'primary' and we are looking within a broad time range or you can adjust it
+        now = datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+        later = (datetime.utcnow() + timedelta(days=30)).isoformat() + 'Z'  # Look ahead 30 days
+
+        events_result = service.events().list(calendarId='primary', timeMin=now, timeMax=later,
+                                              q=search_description, singleEvents=True, orderBy='startTime').execute()
+        events = events_result.get('items', [])
+
+        if not events:
+            print("No events found with the provided description.")
+            return None
+
+        # Return the first found event
+        return events[0]  # Assuming we work with the first found event
+
+    def modify_event(self, event_id, new_summary=None, new_location=None, new_start_time=None, new_end_time=None):
+        service = self.google_calendar_auth()
+        # Retrieve the event first
+        event = service.events().get(calendarId='primary', eventId=event_id).execute()
+        print("******")
+        print(event)
+        # Update the event properties based on provided inputs
+        if new_summary:
+            event['summary'] = new_summary
+        if new_location:
+            event['location'] = new_location
+        if new_start_time or new_end_time:
+            calendar_timezone = service.settings().get(setting='timezone').execute().get('value')
+            tz = pytz.timezone(calendar_timezone)
+            if new_start_time:
+                event['start']['dateTime'] = tz.localize(
+                    datetime.strptime(new_start_time, '%Y-%m-%dT%H:%M:%S')).isoformat()
+            if new_end_time:
+                event['end']['dateTime'] = tz.localize(datetime.strptime(new_end_time, '%Y-%m-%dT%H:%M:%S')).isoformat()
+
+        # Update the event in the calendar
+        updated_event = service.events().update(calendarId='primary', eventId=event_id, body=event).execute()
+        print("Updated event:")
+        print(f"Summary: {updated_event['summary']}")
+        print(f"Start: {updated_event['start']['dateTime']}, End: {updated_event['end']['dateTime']}")
+        if 'location' in updated_event:
+            print(f"Location: {updated_event['location']}")
+
+    def modify_event_description(self, desc, new_summary=None, new_location=None, new_start_time=None, new_end_time=None):
+        print(desc, new_summary, new_location, new_start_time, new_end_time)
+        event_to_modify = self.find_event_by_description(desc)
+        if event_to_modify:
+            print(f"Event found: {event_to_modify['summary']} at {event_to_modify['start']['dateTime']}")
+            # Proceed with modification after user confirmation
+            self.modify_event(event_to_modify['id'], new_summary=new_summary, new_location=new_location, new_start_time=new_start_time, new_end_time=new_end_time)
+            return True
+            # c.modify_event(event_to_modify['id'], new_summary='Updated Weekly Sync', new_location='Conference Room 1',
+            #                new_start_time='2024-04-25T09:00:00')
+        else:
+            print("No event matched the criteria.")
+            return False
+
 if __name__ == '__main__':
     print("Welcome to PlanPal! ")
     c = MyCalendar()
 
-    # c.create_event('2024-02-04T10:00:00', 'Meeting with Bob', 2, 'Discussing project progress',
-    #                'Office')
+    c.create_event('2024-04-30T10:00:00', 'Meeting with Bob', 2, 'Discussing project progress',
+                   'Office')
     # recent_events = c.get_events_from_to("2024-03-19", "2024-03-20")
     # print(recent_events)
     # c.convert_events_to_string(recent_events)
-    start_date_iso = "2024-03-19"
-    end_date_iso = "2024-03-19"
-    print(c.find_empty_slots(start_date_iso, end_date_iso))
+    # start_date_iso = "2024-03-19"
+    # end_date_iso = "2024-03-19"
+    # print(c.find_empty_slots(start_date_iso, end_date_iso))
+
+    c.modify_event_description("gym", new_start_time='2024-04-30T18:00:00')
+
+
