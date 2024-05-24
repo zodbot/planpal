@@ -15,7 +15,6 @@ load_dotenv(".env")
 # load_dotenv()
 
 # Ensure your OpenAI API key is loaded from the environment variables
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 from planpal_agent import llm
 from planpal_agent.plan_pal import PlanPalAssistant

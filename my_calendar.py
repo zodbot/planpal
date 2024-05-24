@@ -53,7 +53,14 @@ class MyCalendar:
 
     def create_event(self, start_time_str, summary, duration=1, description=None, location=None):
         service = self.google_calendar_auth()
+
+        # Fetch the primary calendar's settings to get the time zone
+        calendar = service.calendars().get(calendarId='primary').execute()
+        local_time_zone = calendar.get('timeZone', 'UTC')  # Default to UTC if time zone is not found
+
         start_time = parser.parse(start_time_str)
+        start_time = start_time.astimezone(
+            pytz.timezone(local_time_zone))  # Ensure the start time is in the local time zone
         end_time = start_time + timedelta(hours=duration)
 
         event = {
@@ -62,11 +69,11 @@ class MyCalendar:
             'description': description,
             'start': {
                 'dateTime': start_time.isoformat(),
-                'timeZone': 'America/Los_Angeles',
+                'timeZone': local_time_zone,
             },
             'end': {
                 'dateTime': end_time.isoformat(),
-                'timeZone': 'America/Los_Angeles',
+                'timeZone': local_time_zone,
             },
         }
 
@@ -340,6 +347,29 @@ class MyCalendar:
         else:
             print("No event matched the criteria.")
             return False
+
+    from datetime import datetime, timedelta
+
+    def remove_event_by_name_and_date(self, event_name, start_date_str, end_date_str=None):
+        service = self.google_calendar_auth()
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').isoformat() + 'Z'  # Start of the day in UTC
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').isoformat() + 'Z'  # End of the day in UTC
+
+        # Search for the event by name within the specified date range
+        events_result = service.events().list(calendarId='primary', timeMin=start_date, timeMax=end_date,
+                                              q=event_name, singleEvents=True, orderBy='startTime').execute()
+        events = events_result.get('items', [])
+
+        if not events:
+            print("No matching events found.")
+            return False
+
+        # Assume removing the first matching event
+        event_to_remove = events[0]
+        service.events().delete(calendarId='primary', eventId=event_to_remove['id']).execute()
+        print(f"Event removed: {event_to_remove['summary']}")
+        return True
+
 
 if __name__ == '__main__':
     print("Welcome to PlanPal! ")

@@ -9,7 +9,7 @@ class Assistant:
         self.name = name
         self.instructions = general_instruct
         self.tools = []
-        self.model = "gpt-4-1106-preview"
+        self.model = "gpt-4o"
 
     def create_assistant(self):
         return self.client.beta.assistants.create(

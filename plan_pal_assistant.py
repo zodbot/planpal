@@ -28,7 +28,6 @@ class PlanPal:
         load_dotenv(".env")
 
         # Ensure your OpenAI API key is loaded from the environment variables
-        openai.api_key = os.getenv("OPENAI_API_KEY")
         self.cal = MyCalendar()
 
     def get_calendar_events(self, n):

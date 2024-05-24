@@ -3,7 +3,7 @@ import time
 
 from openai import OpenAI
 
-client = OpenAI()
+client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 
 def submit_message(assistant_id, thread, user_message):
